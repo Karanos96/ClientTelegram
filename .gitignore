@@ -1,5 +1,30 @@
+# === Build .NET ===
 bin/
 obj/
-*.user
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+
+# === File Visual Studio  ===
 .vs/
-Config.json
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# === TDLib ===
+tdlib-db/
+tdlib-files/
+*.binlog
+
+# === Configurazione locale ===
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# === Log ===
+*.log
+logs/
