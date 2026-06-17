@@ -16,6 +16,8 @@ internal class Program
         builder.Services.AddOpenApi();
 
         var app = builder.Build();
+        //test connection
+        //app.Services.GetRequiredService<ITDLibService>();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
