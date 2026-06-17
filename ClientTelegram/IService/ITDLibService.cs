@@ -2,6 +2,7 @@
 {
     public interface ITDLibService
     {
-        public void UpdateAuthorizationState();
+        Task SetPhoneNumber(string phoneNumber);
+        Task SetAccessCode(string accessCode);
     }
 }

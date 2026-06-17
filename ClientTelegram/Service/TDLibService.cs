@@ -59,9 +59,30 @@ namespace ClientTelegram.Service
             };
         }
 
-        public void UpdateAuthorizationState()
+        public async Task SetPhoneNumber(string phoneNumber)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(phoneNumber))
+            {
+                throw new ArgumentException(ErrorMessage.ERROR_PHONENUMBER);
+            }
+
+            await _client.ExecuteAsync(new TdApi.SetAuthenticationPhoneNumber{
+                PhoneNumber = phoneNumber
+            });
         }
+
+        public async Task SetAccessCode(string accessCode)
+        {
+            if (string.IsNullOrEmpty(accessCode))
+            {
+                throw new ArgumentException(ErrorMessage.ERROR_ACCESS_CODE);
+            }
+
+            await _client.ExecuteAsync(new TdApi.CheckAuthenticationCode
+            {
+                Code = accessCode
+            });
+        }
+
     }
 }
