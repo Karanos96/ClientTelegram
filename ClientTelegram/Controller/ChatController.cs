@@ -4,18 +4,18 @@ using ClientTelegram.OptionEntity;
 using ClientTelegram.Service;
 using ClientTelegram.Utility;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
+using static TdLib.TdApi;
 
 namespace ClientTelegram.Controller
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class ChatController : ControllerBase
     {
         private readonly ITDLibService _service;
         private readonly MethodUtility _utility;
 
-        public AuthController(ITDLibService service, IConfiguration configuration)
+        public ChatController(ITDLibService service, IConfiguration configuration)
         {
             _service = service;
 
@@ -32,30 +32,28 @@ namespace ClientTelegram.Controller
             _utility = new MethodUtility(logFilePath);
         }
 
-        [HttpPost("Phonenumber")]
-        public async Task<ActionResult> SetPhonenumber([FromBody] AuthRequest request)
+        [HttpGet("ChatsInfo/{recordLimit}")]
+        public async Task<ActionResult> GetChatsInfo(int recordLimit)
         {
+            List<ChatInfoResponse> result = new List<ChatInfoResponse>();
+
             try
             {
-                await _service.SetPhoneNumber(request.Phonenumber);
-            }
-            catch (Exception ex)
-            {
-                _utility.Log("ERROR-MESSAGE", ex.Message);
-                _utility.Log("ERROR-STACKTRACE", ex.StackTrace);
 
-                return BadRequest(ErrorMessage.ERROR_AUTHENTICATION_PHONENUMBER);
-            }
+                if (recordLimit != null && recordLimit > 0)
+                {
+                    Chats chats = await _service.GetChatList(recordLimit);
 
-            return Ok(SuccessMessage.SEND_SUCCESSFULLY_PHONENUMBER);
-        }
+                    foreach (var chatId in chats.ChatIds)
+                    {
+                        result.Add(await _service.GetChatInfoById(chatId));
+                    }
 
-        [HttpPost("AccessCode")]
-        public async Task<ActionResult> SetAccessCode([FromBody] AuthRequest request)
-        {
-            try
-            {
-                await _service.SetAccessCode(request.AccessCode);
+                }
+                else
+                {
+                    return BadRequest(ErrorMessage.ERROR_LIMIT_CHATS);
+                }
             }
             catch (Exception ex)
             {
@@ -65,9 +63,7 @@ namespace ClientTelegram.Controller
                 return BadRequest(ErrorMessage.ERROR_AUTHENTICATION_ACCESS_CODE);
             }
 
-            return Ok(SuccessMessage.SUCCESSFULLY_CONNECTION);
+            return Ok(result);
         }
-
-
     }
 }

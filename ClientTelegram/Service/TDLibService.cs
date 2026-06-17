@@ -1,4 +1,5 @@
 ﻿using ClientTelegram.Constant;
+using ClientTelegram.Entity;
 using ClientTelegram.OptionEntity;
 using ClientTelegram.Utility;
 using TdLib;
@@ -15,7 +16,7 @@ namespace ClientTelegram.Service
         {
             string basePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             _client = new TdClient();
-           
+
 
             TelegramOptions? telegramOptions = configuration.GetSection("Telegram")
                 .Get<TelegramOptions>();
@@ -23,7 +24,7 @@ namespace ClientTelegram.Service
             LogOptions? logOptions = configuration.GetSection("Log")
                 .Get<LogOptions>();
 
-            if(telegramOptions == null || logOptions == null)
+            if (telegramOptions == null || logOptions == null)
             {
                 throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
             }
@@ -37,7 +38,7 @@ namespace ClientTelegram.Service
                     return;
 
                 _currentState = authUpdate.AuthorizationState;
-                _utility.Log("INFO" , _currentState.ToString());
+                _utility.Log("INFO", _currentState.ToString());
 
                 switch (authUpdate.AuthorizationState)
                 {
@@ -51,7 +52,7 @@ namespace ClientTelegram.Service
                             SystemLanguageCode = "it",
                             DeviceModel = "Desktop",
                             ApplicationVersion = "1.0",
-                            DatabaseDirectory = Path.Combine(basePath, "ClientTelegram" , telegramOptions.DatabaseDirectory),
+                            DatabaseDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.DatabaseDirectory),
                             FilesDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.FilesDirectory),
                         });
                         break;
@@ -66,7 +67,8 @@ namespace ClientTelegram.Service
                 throw new ArgumentException(ErrorMessage.ERROR_PHONENUMBER);
             }
 
-            await _client.ExecuteAsync(new TdApi.SetAuthenticationPhoneNumber{
+            await _client.ExecuteAsync(new TdApi.SetAuthenticationPhoneNumber
+            {
                 PhoneNumber = phoneNumber
             });
         }
@@ -84,5 +86,36 @@ namespace ClientTelegram.Service
             });
         }
 
+        public async Task<Chats> GetChatList(int limitGetChat)
+        {
+            Chats chatsList = await _client.ExecuteAsync(new TdApi.GetChats
+            {
+                ChatList = new TdApi.ChatList.ChatListMain(),
+                Limit = limitGetChat
+            });
+
+            return chatsList;
+        }
+
+        public async Task<ChatInfoResponse> GetChatInfoById(long chatId)
+        {
+            ChatInfoResponse chatInfoResponse = null;
+            var chat = await _client.ExecuteAsync(new TdApi.GetChat
+            {
+                ChatId = chatId
+            });
+
+            if (chat != null)
+            {
+                chatInfoResponse = new ChatInfoResponse()
+                {
+                    ChatId = chat.Id,
+                    ChatTitle = chat.Title,
+                };
+
+            }
+            return chatInfoResponse;
+
+        }
     }
 }
