@@ -34,27 +34,31 @@ namespace ClientTelegram.Service
 
             _client.UpdateReceived += async (sender, update) =>
             {
-                if (update is not TdApi.Update.UpdateAuthorizationState authUpdate)
-                    return;
-
-                _currentState = authUpdate.AuthorizationState;
-                _utility.Log("INFO", _currentState.ToString());
-
-                switch (authUpdate.AuthorizationState)
+                switch (update)
                 {
-                    case TdApi.AuthorizationState.AuthorizationStateWaitTdlibParameters:
-                        await _client.ExecuteAsync(new TdApi.SetTdlibParameters
+                    case TdApi.Update.UpdateAuthorizationState authUpdate:
+                        _currentState = authUpdate.AuthorizationState;
+                        _utility.Log("INFO", _currentState.ToString());
+
+                        if (authUpdate.AuthorizationState is TdApi.AuthorizationState.AuthorizationStateWaitTdlibParameters)
                         {
-                            ApiId = telegramOptions.ApiId,
-                            ApiHash = telegramOptions.ApiHash,
-                            UseMessageDatabase = true,
-                            UseSecretChats = false,
-                            SystemLanguageCode = "it",
-                            DeviceModel = "Desktop",
-                            ApplicationVersion = "1.0",
-                            DatabaseDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.DatabaseDirectory),
-                            FilesDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.FilesDirectory),
-                        });
+                            await _client.ExecuteAsync(new TdApi.SetTdlibParameters
+                            {
+                                ApiId = telegramOptions.ApiId,
+                                ApiHash = telegramOptions.ApiHash,
+                                UseMessageDatabase = true,
+                                UseSecretChats = false,
+                                SystemLanguageCode = "it",
+                                DeviceModel = "Desktop",
+                                ApplicationVersion = "1.0",
+                                DatabaseDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.DatabaseDirectory),
+                                FilesDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.FilesDirectory),
+                            });
+                        }
+                        break;
+
+                    case TdApi.Update.UpdateNewMessage newMessage:
+                        HandleNewMessage(newMessage.Message);
                         break;
                 }
             };
@@ -115,6 +119,48 @@ namespace ClientTelegram.Service
 
             }
             return chatInfoResponse;
+
+        }
+
+        public void HandleNewMessage(Message message)
+        {
+            string description = message.Content switch
+            {
+                TdApi.MessageContent.MessageText text
+                    => text.Text.Text,
+
+                TdApi.MessageContent.MessagePhoto photo
+                    => $"[PHOTO] {photo.Caption.Text}",
+
+                TdApi.MessageContent.MessageVideo video
+                    => $"[VIDEO] {video.Caption.Text}",
+
+                TdApi.MessageContent.MessageDocument doc
+                    => $"[DOCUMENT: {doc.Document.FileName}] {doc.Caption.Text}",
+
+                TdApi.MessageContent.MessageAudio audio
+                    => $"[AUDIO: {audio.Audio.FileName}]",
+
+                TdApi.MessageContent.MessageVoiceNote voice
+                    => "[VOCAL MESSAGE]",
+
+                TdApi.MessageContent.MessageSticker sticker
+                    => $"[STICKER: {sticker.Sticker.Emoji}]",
+
+                TdApi.MessageContent.MessageAnimation
+                    => "[GIF]",
+
+                _ => $"[{message.Content.GetType().Name}]"
+            };
+
+            if (message.IsOutgoing)
+            {
+                _utility.Log("MESSAGE SENT", $"Chat {message.ChatId}: {description}");
+            }
+            else
+            {
+                _utility.Log("MESSAGE", $"Chat {message.ChatId}: {description}");
+            }
 
         }
     }
