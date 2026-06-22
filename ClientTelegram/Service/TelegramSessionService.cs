@@ -7,29 +7,26 @@ using static TdLib.TdApi;
 
 namespace ClientTelegram.Service
 {
-    public class TDLibService : ITDLibService
+    public class TelegramSessionService : ITelegramSessionService
     {
         private readonly TdClient _client;
         private TdApi.AuthorizationState? _currentState;
         private MethodUtility _utility;
-        public TDLibService(IConfiguration configuration)
+        public int SessionId { get;}
+        public TelegramSessionService(  int sessionId , 
+                                        TelegramOptions telegramOptions,
+                                        LogOptions logOptions )
         {
+            SessionId = sessionId;
             string basePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             _client = new TdClient();
-
-
-            TelegramOptions? telegramOptions = configuration.GetSection("Telegram")
-                .Get<TelegramOptions>();
-
-            LogOptions? logOptions = configuration.GetSection("Log")
-                .Get<LogOptions>();
 
             if (telegramOptions == null || logOptions == null)
             {
                 throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
             }
 
-            string logFilePath = Path.Combine(basePath, "ClientTelegram", logOptions.PathLog, "app.log");
+            string logFilePath = Path.Combine(basePath, "ClientTelegram", logOptions.PathLog, $"session_{sessionId}.log");
             _utility = new MethodUtility(logFilePath);
 
             _client.UpdateReceived += async (sender, update) =>
@@ -38,7 +35,7 @@ namespace ClientTelegram.Service
                 {
                     case TdApi.Update.UpdateAuthorizationState authUpdate:
                         _currentState = authUpdate.AuthorizationState;
-                        _utility.Log("INFO", _currentState.ToString());
+                        _utility.Log("INFO", $"[Session {SessionId}] - {_currentState.ToString()}");
 
                         if (authUpdate.AuthorizationState is TdApi.AuthorizationState.AuthorizationStateWaitTdlibParameters)
                         {
@@ -51,8 +48,8 @@ namespace ClientTelegram.Service
                                 SystemLanguageCode = "it",
                                 DeviceModel = "Desktop",
                                 ApplicationVersion = "1.0",
-                                DatabaseDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.DatabaseDirectory),
-                                FilesDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.FilesDirectory),
+                                DatabaseDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.DatabaseDirectory, sessionId.ToString()),
+                                FilesDirectory = Path.Combine(basePath, "ClientTelegram", telegramOptions.FilesDirectory, sessionId.ToString()),
                             });
                         }
                         break;

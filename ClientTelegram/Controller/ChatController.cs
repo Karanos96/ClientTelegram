@@ -1,5 +1,6 @@
 ﻿using ClientTelegram.Constant;
 using ClientTelegram.Entity;
+using ClientTelegram.IService;
 using ClientTelegram.OptionEntity;
 using ClientTelegram.Service;
 using ClientTelegram.Utility;
@@ -12,55 +13,40 @@ namespace ClientTelegram.Controller
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
     {
-        private readonly ITDLibService _service;
-        private readonly MethodUtility _utility;
+        private readonly ITelegramOrchestrator _orchestrator;
 
-        public ChatController(ITDLibService service, IConfiguration configuration)
+        public ChatController(ITelegramOrchestrator orchestrator)
         {
-            _service = service;
-
-            string basePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            LogOptions? logOptions = configuration.GetSection("Log")
-                .Get<LogOptions>();
-
-            if (logOptions == null)
-            {
-                throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
-            }
-
-            string logFilePath = Path.Combine(basePath, "ClientTelegram", logOptions.PathLog, "app.log");
-            _utility = new MethodUtility(logFilePath);
+            _orchestrator = orchestrator;
         }
 
-        [HttpGet("ChatsInfo/{recordLimit}")]
-        public async Task<ActionResult> GetChatsInfo(int recordLimit)
+        [HttpGet("ChatsInfo/{recordLimit}/{sessionId}")]
+        public async Task<ActionResult> GetChatsInfo(int recordLimit, int sessionId)
         {
             List<ChatInfoResponse> result = new List<ChatInfoResponse>();
 
             try
             {
 
-                if (recordLimit != null && recordLimit > 0)
-                {
-                    Chats chats = await _service.GetChatList(recordLimit);
-
-                    foreach (var chatId in chats.ChatIds)
-                    {
-                        result.Add(await _service.GetChatInfoById(chatId));
-                    }
-
-                }
-                else
-                {
+                if (recordLimit == 0)
                     return BadRequest(ErrorMessage.ERROR_LIMIT_CHATS);
+
+                if (sessionId == 0)
+                    return BadRequest(ErrorMessage.ERROR_SESSION_ID_NOT_VALID);
+
+                ITelegramSessionService session = _orchestrator.GetSession(sessionId);
+                Chats chats = await session.GetChatList(recordLimit);
+
+                foreach (var chatId in chats.ChatIds)
+                {
+                    result.Add(await session.GetChatInfoById(chatId));
                 }
+
+
             }
             catch (Exception ex)
             {
-                _utility.Log("ERROR-MESSAGE", ex.Message);
-                _utility.Log("ERROR-STACKTRACE", ex.StackTrace);
-
-                return BadRequest(ErrorMessage.ERROR_AUTHENTICATION_ACCESS_CODE);
+                return BadRequest(ErrorMessage.ERROR_GET_INFO_CHATS);
             }
 
             return Ok(result);

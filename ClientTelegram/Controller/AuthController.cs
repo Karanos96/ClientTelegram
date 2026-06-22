@@ -1,5 +1,6 @@
 ﻿using ClientTelegram.Constant;
 using ClientTelegram.Entity;
+using ClientTelegram.IService;
 using ClientTelegram.OptionEntity;
 using ClientTelegram.Service;
 using ClientTelegram.Utility;
@@ -12,24 +13,11 @@ namespace ClientTelegram.Controller
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly ITDLibService _service;
-        private readonly MethodUtility _utility;
+        private readonly ITelegramOrchestrator _orchestrator;
 
-        public AuthController(ITDLibService service, IConfiguration configuration)
+        public AuthController(ITelegramOrchestrator orchestrator)
         {
-            _service = service;
-
-            string basePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            LogOptions? logOptions = configuration.GetSection("Log")
-                .Get<LogOptions>();
-
-            if (logOptions == null)
-            {
-                throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
-            }
-
-            string logFilePath = Path.Combine(basePath, "ClientTelegram", logOptions.PathLog, "app.log");
-            _utility = new MethodUtility(logFilePath);
+            _orchestrator = orchestrator;
         }
 
         [HttpPost("Phonenumber")]
@@ -37,13 +25,11 @@ namespace ClientTelegram.Controller
         {
             try
             {
-                await _service.SetPhoneNumber(request.Phonenumber);
+                ITelegramSessionService session = _orchestrator.GetOrCreateSession(request.SessionId);
+                await session.SetPhoneNumber(request.Phonenumber);
             }
             catch (Exception ex)
             {
-                _utility.Log("ERROR-MESSAGE", ex.Message);
-                _utility.Log("ERROR-STACKTRACE", ex.StackTrace);
-
                 return BadRequest(ErrorMessage.ERROR_AUTHENTICATION_PHONENUMBER);
             }
 
@@ -55,13 +41,11 @@ namespace ClientTelegram.Controller
         {
             try
             {
-                await _service.SetAccessCode(request.AccessCode);
+                ITelegramSessionService session = _orchestrator.GetSession(request.SessionId);
+                await session.SetAccessCode(request.AccessCode);
             }
             catch (Exception ex)
             {
-                _utility.Log("ERROR-MESSAGE", ex.Message);
-                _utility.Log("ERROR-STACKTRACE", ex.StackTrace);
-
                 return BadRequest(ErrorMessage.ERROR_AUTHENTICATION_ACCESS_CODE);
             }
 

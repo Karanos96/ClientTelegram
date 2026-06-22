@@ -4,7 +4,7 @@ using static TdLib.TdApi;
 
 namespace ClientTelegram.Service
 {
-    public interface ITDLibService
+    public interface ITelegramSessionService
     {
         Task SetPhoneNumber(string phoneNumber);
         Task SetAccessCode(string accessCode);
