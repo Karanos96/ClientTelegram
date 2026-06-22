@@ -13,12 +13,13 @@ namespace ClientTelegram.Service
         private readonly ConcurrentDictionary<int, ITelegramSessionService> _liveSession = new ConcurrentDictionary<int, ITelegramSessionService>();
         private readonly TelegramOptions _telegramOptions;
         private readonly LogOptions _logOptions;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public TelegramOrchestrator(IConfiguration configuration)
+        public TelegramOrchestrator(IConfiguration configuration , IServiceScopeFactory scopeFactory)
         {
             /*In this constructor only one time the configuration was read and they 
              will pass to the TelegramSessionService*/
-
+            _scopeFactory = scopeFactory;
             _telegramOptions = configuration.GetSection("Telegram").Get<TelegramOptions>()
                 ?? throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
 
@@ -54,6 +55,23 @@ namespace ClientTelegram.Service
             else
             {
                 throw new KeyNotFoundException(ErrorMessage.ERROR_SESSION_NOT_FOUND + sessionId);
+            }
+        }
+
+        /// <summary>
+        /// This method read from db the session was register 
+        /// and foreach session build the client 
+        /// </summary>
+        /// <returns></returns>
+        public async Task InitializeAsync()
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<ISessionRepository>();
+            var sessions = await repo.GetAllSessions();
+
+            foreach(var session in sessions)
+            {
+                GetOrCreateSession(session.Id);
             }
         }
     }

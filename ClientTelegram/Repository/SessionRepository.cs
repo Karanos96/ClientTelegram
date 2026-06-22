@@ -42,5 +42,16 @@ namespace ClientTelegram.Repository
                 Phonenumber = newSession.Phonenumber,
             };
         }
+
+        public async Task<List<SessionDto>> GetAllSessions()
+        {
+            return await _context.Sessions
+                .AsNoTracking()
+                .Select(s => new SessionDto { 
+                    Id = s.Id, 
+                    Phonenumber = s.Phonenumber 
+                })
+                .ToListAsync();
+        }
     }
 }

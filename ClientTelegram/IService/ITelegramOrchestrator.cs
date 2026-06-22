@@ -6,5 +6,6 @@ namespace ClientTelegram.IService
     {
         ITelegramSessionService GetOrCreateSession(int sessionId);
         ITelegramSessionService GetSession(int sessionId);
+        Task InitializeAsync();
     }
 }

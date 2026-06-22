@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 internal class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +27,9 @@ internal class Program
 
         //test connection
         //app.Services.GetRequiredService<ITDLibService>();
+
+        var orchestrator = app.Services.GetRequiredService<ITelegramOrchestrator>();
+        await orchestrator.InitializeAsync();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
