@@ -1,8 +1,10 @@
 using ClientTelegram.Context;
 using ClientTelegram.IService;
 using ClientTelegram.Repository;
+using ClientTelegram.Security;
 using ClientTelegram.Service;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 internal class Program
 {
@@ -13,6 +15,22 @@ internal class Program
         // Add services to the container.
 
         builder.Services.AddControllers();
+
+        //----------Singleton for cryptography---------------------------------------
+        builder.Services.AddSingleton<NonceCounterStore>(sp =>
+        {
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' mancante.");
+            return new NonceCounterStore(connectionString);
+        });
+
+        builder.Services.AddSingleton<CounterNonceGenerator>(sp =>
+        {
+            var store = sp.GetRequiredService<NonceCounterStore>();
+            return new CounterNonceGenerator(store.ReserveBlock);
+        });
+
+        //--------------------------------------------------------------------------
 
         builder.Services.AddSingleton<ITelegramOrchestrator , TelegramOrchestrator>();
         builder.Services.AddScoped<ISessionRepository, SessionRepository>();

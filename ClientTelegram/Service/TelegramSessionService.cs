@@ -1,6 +1,7 @@
 ﻿using ClientTelegram.Constant;
 using ClientTelegram.Entity;
 using ClientTelegram.OptionEntity;
+using ClientTelegram.Security;
 using ClientTelegram.Utility;
 using TdLib;
 using static TdLib.TdApi;
@@ -12,14 +13,17 @@ namespace ClientTelegram.Service
         private readonly TdClient _client;
         private TdApi.AuthorizationState? _currentState;
         private MethodUtility _utility;
+        private readonly CounterNonceGenerator _nonceGenerator;
         public int SessionId { get;}
         public TelegramSessionService(  int sessionId , 
                                         TelegramOptions telegramOptions,
-                                        LogOptions logOptions )
+                                        LogOptions logOptions,
+                                        CounterNonceGenerator nonceGenerator)
         {
             SessionId = sessionId;
             string basePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             _client = new TdClient();
+            _nonceGenerator = nonceGenerator;
 
             if (telegramOptions == null || logOptions == null)
             {

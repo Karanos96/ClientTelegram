@@ -1,6 +1,7 @@
 ﻿using ClientTelegram.Constant;
 using ClientTelegram.IService;
 using ClientTelegram.OptionEntity;
+using ClientTelegram.Security;
 using System.Collections.Concurrent;
 
 namespace ClientTelegram.Service
@@ -14,8 +15,12 @@ namespace ClientTelegram.Service
         private readonly TelegramOptions _telegramOptions;
         private readonly LogOptions _logOptions;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly CounterNonceGenerator _nonceGenerator;
 
-        public TelegramOrchestrator(IConfiguration configuration , IServiceScopeFactory scopeFactory)
+
+        public TelegramOrchestrator(IConfiguration configuration , 
+                                    IServiceScopeFactory scopeFactory,
+                                    CounterNonceGenerator nonceGenerator)
         {
             /*In this constructor only one time the configuration was read and they 
              will pass to the TelegramSessionService*/
@@ -25,6 +30,9 @@ namespace ClientTelegram.Service
 
             _logOptions = configuration.GetSection("Log").Get<LogOptions>()
                 ?? throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
+
+            _nonceGenerator = nonceGenerator;
+           
         }
 
         /// <summary>
@@ -37,7 +45,8 @@ namespace ClientTelegram.Service
             return _liveSession.GetOrAdd(sessionId, id => new TelegramSessionService(
                 id,
                 _telegramOptions,
-                _logOptions
+                _logOptions,
+                _nonceGenerator
                 ));
         }
 
