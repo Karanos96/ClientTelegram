@@ -1,4 +1,7 @@
-﻿namespace ClientTelegram.Constant
+﻿using Newtonsoft.Json.Serialization;
+using System.Reflection.Metadata;
+
+namespace ClientTelegram.Constant
 {
     public static class ErrorMessage
     {
@@ -12,6 +15,14 @@
         public const string ERROR_GET_INFO_CHATS = "An error incurred while get chat info.";
         public const string ERROR_SESSION_NOT_FOUND = "Not found session with id: ";
         public const string ERROR_SESSION_ID_NOT_VALID = "Session Id not valid.";
+
+        #region CRYPTO ERROR
+        public const string ERROR_CRYPTO_ACTIVE_KEY_ID = "Invalid ActiveKeyId.";
+        public const string ERROR_MASTER_KEY = "MasterKeyBase64 not found.";
+        public const string ERROR_AES_KEY = "The key AES must be 32 byte.";
+
+        public const string ERROR_PAYLOAD_DECRYPT = "Key not found: ";
+        #endregion
 
 
 

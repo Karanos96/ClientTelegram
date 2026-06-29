@@ -8,8 +8,12 @@
         public long ChatId { get; set; }
         public long MessageId { get; set; }           
         public string Type { get; set; } = "";         // text, photo, video...
-        public string Description { get; set; } = "";
         public bool IsOutgoing { get; set; }
         public DateTime Date { get; set; }
+
+        public byte[] Ciphertext { get; set; } = [];
+        public byte[] Nonce { get; set; } = [];
+        public byte[] Tag { get; set; } = [];
+        public int KeyId { get; set; }
     }
 }

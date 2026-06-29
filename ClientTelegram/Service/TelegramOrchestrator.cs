@@ -15,24 +15,23 @@ namespace ClientTelegram.Service
         private readonly TelegramOptions _telegramOptions;
         private readonly LogOptions _logOptions;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly CounterNonceGenerator _nonceGenerator;
+        private readonly IMessageCryptoService _messageCryptoService;
 
 
         public TelegramOrchestrator(IConfiguration configuration , 
                                     IServiceScopeFactory scopeFactory,
-                                    CounterNonceGenerator nonceGenerator)
+                                    IMessageCryptoService messageCryptoService)
         {
             /*In this constructor only one time the configuration was read and they 
              will pass to the TelegramSessionService*/
             _scopeFactory = scopeFactory;
+            _messageCryptoService = messageCryptoService;
+
             _telegramOptions = configuration.GetSection("Telegram").Get<TelegramOptions>()
                 ?? throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
 
             _logOptions = configuration.GetSection("Log").Get<LogOptions>()
                 ?? throw new InvalidOperationException(ErrorMessage.ERROR_OPTION_TELEGRAM);
-
-            _nonceGenerator = nonceGenerator;
-           
         }
 
         /// <summary>
@@ -46,7 +45,8 @@ namespace ClientTelegram.Service
                 id,
                 _telegramOptions,
                 _logOptions,
-                _nonceGenerator
+                _scopeFactory,
+                _messageCryptoService
                 ));
         }
 

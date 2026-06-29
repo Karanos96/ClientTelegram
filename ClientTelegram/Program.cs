@@ -1,5 +1,6 @@
 using ClientTelegram.Context;
 using ClientTelegram.IService;
+using ClientTelegram.OptionEntity;
 using ClientTelegram.Repository;
 using ClientTelegram.Security;
 using ClientTelegram.Service;
@@ -34,12 +35,17 @@ internal class Program
 
         builder.Services.AddSingleton<ITelegramOrchestrator , TelegramOrchestrator>();
         builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+        builder.Services.AddSingleton<IMessageCryptoService, MessageCryptoService>();
+        builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+        builder.Services.Configure<CryptoOptions>(builder.Configuration.GetSection("Crypto"));
+
 
         var app = builder.Build();
 

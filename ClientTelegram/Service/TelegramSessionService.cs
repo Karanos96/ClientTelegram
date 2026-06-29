@@ -1,6 +1,7 @@
 ﻿using ClientTelegram.Constant;
 using ClientTelegram.Entity;
 using ClientTelegram.OptionEntity;
+using ClientTelegram.Repository;
 using ClientTelegram.Security;
 using ClientTelegram.Utility;
 using TdLib;
@@ -13,17 +14,22 @@ namespace ClientTelegram.Service
         private readonly TdClient _client;
         private TdApi.AuthorizationState? _currentState;
         private MethodUtility _utility;
-        private readonly CounterNonceGenerator _nonceGenerator;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly IMessageCryptoService _messageCryptoService;
         public int SessionId { get;}
         public TelegramSessionService(  int sessionId , 
                                         TelegramOptions telegramOptions,
                                         LogOptions logOptions,
-                                        CounterNonceGenerator nonceGenerator)
+                                        IServiceScopeFactory scopeFactory,
+                                        IMessageCryptoService cryptoMessageService)
         {
             SessionId = sessionId;
+            _serviceScopeFactory = scopeFactory;
+            _messageCryptoService = cryptoMessageService;  
+
             string basePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             _client = new TdClient();
-            _nonceGenerator = nonceGenerator;
+
 
             if (telegramOptions == null || logOptions == null)
             {
@@ -59,7 +65,7 @@ namespace ClientTelegram.Service
                         break;
 
                     case TdApi.Update.UpdateNewMessage newMessage:
-                        HandleNewMessage(newMessage.Message);
+                        await HandleNewMessage(newMessage.Message);
                         break;
                 }
             };
@@ -123,44 +129,65 @@ namespace ClientTelegram.Service
 
         }
 
-        public void HandleNewMessage(Message message)
+        public async Task HandleNewMessage(Message message)
         {
-            string description = message.Content switch
+            try
             {
-                TdApi.MessageContent.MessageText text
-                    => text.Text.Text,
+                string description = message.Content switch
+                {
+                    TdApi.MessageContent.MessageText text
+                        => text.Text.Text,
 
-                TdApi.MessageContent.MessagePhoto photo
-                    => $"[PHOTO] {photo.Caption.Text}",
+                    TdApi.MessageContent.MessagePhoto photo
+                        => $"[PHOTO] {photo.Caption.Text}",
 
-                TdApi.MessageContent.MessageVideo video
-                    => $"[VIDEO] {video.Caption.Text}",
+                    TdApi.MessageContent.MessageVideo video
+                        => $"[VIDEO] {video.Caption.Text}",
 
-                TdApi.MessageContent.MessageDocument doc
-                    => $"[DOCUMENT: {doc.Document.FileName}] {doc.Caption.Text}",
+                    TdApi.MessageContent.MessageDocument doc
+                        => $"[DOCUMENT: {doc.Document.FileName}] {doc.Caption.Text}",
 
-                TdApi.MessageContent.MessageAudio audio
-                    => $"[AUDIO: {audio.Audio.FileName}]",
+                    TdApi.MessageContent.MessageAudio audio
+                        => $"[AUDIO: {audio.Audio.FileName}]",
 
-                TdApi.MessageContent.MessageVoiceNote voice
-                    => "[VOCAL MESSAGE]",
+                    TdApi.MessageContent.MessageVoiceNote voice
+                        => "[VOCAL MESSAGE]",
 
-                TdApi.MessageContent.MessageSticker sticker
-                    => $"[STICKER: {sticker.Sticker.Emoji}]",
+                    TdApi.MessageContent.MessageSticker sticker
+                        => $"[STICKER: {sticker.Sticker.Emoji}]",
 
-                TdApi.MessageContent.MessageAnimation
-                    => "[GIF]",
+                    TdApi.MessageContent.MessageAnimation
+                        => "[GIF]",
 
-                _ => $"[{message.Content.GetType().Name}]"
-            };
+                    _ => $"[{message.Content.GetType().Name}]"
+                };
 
-            if (message.IsOutgoing)
-            {
-                _utility.Log("MESSAGE SENT", $"Chat {message.ChatId}: {description}");
+                EncryptedPayload encryptedPayload = _messageCryptoService.Encrypt(description);
+
+                MessageEntity messageEntity = new MessageEntity
+                {
+                    SessionId = SessionId,
+                    ChatId = message.ChatId,
+                    MessageId = message.Id,
+                    Type = message.Content.GetType().Name,
+                    IsOutgoing = message.IsOutgoing,
+                    Date = DateTimeOffset.FromUnixTimeSeconds(message.Date).UtcDateTime,
+                    Ciphertext = encryptedPayload.Ciphertext,
+                    Nonce = encryptedPayload.Nonce,
+                    Tag = encryptedPayload.Tag,
+                    KeyId = encryptedPayload.KeyId
+                };
+
+                using var scope = _serviceScopeFactory.CreateScope();
+                var messageRepository = scope.ServiceProvider.GetRequiredService<IMessageRepository>();
+
+                await messageRepository.AddAsync(messageEntity);
+
+                _utility.Log("SYSTEM", $"Saved new message: sessionId:{SessionId}, Chat: {message.ChatId}, Message: {message.Id}");
             }
-            else
+            catch (Exception ex) 
             {
-                _utility.Log("MESSAGE", $"Chat {message.ChatId}: {description}");
+                _utility.Log("ERROR", $"Error while saving message: sessionId:{SessionId}, Message: {message.Id}, Error: {ex.Message}, InnerException: {ex.InnerException}");
             }
 
         }

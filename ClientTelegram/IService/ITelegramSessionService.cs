@@ -11,6 +11,6 @@ namespace ClientTelegram.Service
 
         Task<Chats> GetChatList(int limitGetChat);
         Task<ChatInfoResponse> GetChatInfoById(long chatId);
-        void HandleNewMessage(TdApi.Message message);
+        Task HandleNewMessage(TdApi.Message message);
     }
 }
