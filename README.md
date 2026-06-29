@@ -19,12 +19,12 @@ Build a Telegram client capable of:
 To get the application running, follow these steps:
 
 1. Database configuration:
-   I. First time you should put in appsettings.Development.json your db connection string,
-   II. Open the solution , open the console with NuGet package and launch
+   1. First time you should put in appsettings.Development.json your db connection string,
+   2. Open the solution , open the console with NuGet package and launch
       ``` bash
          update-database
       ```
-   III. After the databse is created run this query in sql server
+   3. After the databse is created run this query in sql server
    ``` sql
       CREATE TABLE NonceCounter
       (
@@ -36,15 +36,15 @@ To get the application running, follow these steps:
    this query is very important to generate a correct nonce with multiple restart of application.
 
 2. Cryptography Key:
-   I. open the project KeyGenerator and run. you'll see in console Base64 AES-256 key used to encrypt/decrypt message       content. Copy the value.
-   II. Paste the value in appsettings.Development.json in MasterKeyBase64
+   1. open the project KeyGenerator and run. you'll see in console Base64 AES-256 key used to encrypt/decrypt message       content. Copy the value.
+   2. Paste the value in appsettings.Development.json in MasterKeyBase64
 
 3. Managment Apllication
    
-   I. Log in at https://my.telegram.org/auth?to=apps
-   II. Create an application and add the `api_id` and `api_hash` to `appsettings.json`.
+   1. Log in at https://my.telegram.org/auth?to=apps
+   2. Create an application and add the `api_id` and `api_hash` to `appsettings.json`.
       This is what lets you authenticate through the app.
-   III. Once the project is running, call the `api/Session/Register` endpoint with the
+   3. Once the project is running, call the `api/Session/Register` endpoint with the
       POST method, sending this object:
    
    ```json
@@ -59,7 +59,7 @@ To get the application running, follow these steps:
           "Phonenumber": "+39xxxxxxxxxx"
       }
    ```
-   IV. Now you must required the telegram code, call the  `/api/Auth/Phonenumber` endpoint with the
+   4. Now you must required the telegram code, call the  `/api/Auth/Phonenumber` endpoint with the
       POST method, sending this object:
    ```json
       {
@@ -69,7 +69,7 @@ To get the application running, follow these steps:
       }
    ```
    You will recive the access code from Telegram.
-   V. To complete authentication, call the `api/Auth/AccessCode` endpoint with the
+   5. To complete authentication, call the `api/Auth/AccessCode` endpoint with the
       POST method, sending the following object:
    
    ```json
